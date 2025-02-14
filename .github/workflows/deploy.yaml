@@ -56,4 +56,4 @@ jobs:
 
       # Step 8: Apply Terraform changes (auto-approve)
       - name: Terraform Apply
-        run: terraform apply -au
+        run: terraform apply -auto-approve
