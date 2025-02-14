@@ -2,21 +2,35 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0" # Updated version
+      version = "~> 4.16"
     }
   }
+
   required_version = ">= 1.2.0"
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = "us-west-2"
+  #new line added here#
+
 }
 
-resource "aws_instance" "app_server" {
-  ami           = "ami-0c02fb55956c7d316" # Example updated AMI for us-east-1
-  instance_type = "t1.micro" # Updated instance type
 
-  tags = {
-    Name = "Brand-new-Server"
-  }
+resource "aws_vpc" "example" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.example.id
+  cidr_block              = "10.0.3.0/24"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "private" {
+  vpc_id     = aws_vpc.example.id
+  cidr_block = "10.0.4.0/24"
+}
+
+resource "aws_internet_gateway" "example" {
+  vpc_id = aws_vpc.example.id
 }
