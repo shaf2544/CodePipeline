@@ -63,7 +63,7 @@ jobs:
       # Step 8: Plan Terraform changes
       - name: Terraform Plan
         run: terraform plan 
-        #testing
+        
 
       # Step 9: Apply or Destroy Terraform
       - name: Terraform Apply/Destroy
