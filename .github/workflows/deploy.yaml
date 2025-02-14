@@ -1,31 +1,36 @@
 name: Terraform Deploy to AWS
 
-
 on:
   push:
     branches:
-      - main  # Trigger this pipeline only on pushes to the main branch
-
+      - main  # Trigger on push to main
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      action:
+        description: 'Apply or Destroy'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - destroy
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
-
 
     steps:
       # Step 1: Check out the code from GitHub
       - name: Checkout code
         uses: actions/checkout@v2
 
-
       # Step 2: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
-          terraform_version: '1.4.0'  # Specify the Terraform version you are using
+          terraform_version: '1.4.0'
 
-
-      # Step 3: Configure AWS credentials (updated inputs)
+      # Step 3: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -33,27 +38,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-
       # Step 4: Debug AWS Credentials
       - name: Debug AWS Credentials
         run: aws sts get-caller-identity
-
 
       # Step 5: Initialize Terraform
       - name: Terraform Init
         run: terraform init
 
-
-      # Step 6: Validate Terraform configuration (optional but recommended)
+      # Step 6: Validate Terraform configuration
       - name: Terraform Validate
         run: terraform validate
 
+      # Step 7: Determine if destroy is needed
+      - name: Check if destroy is needed
+        id: check_destroy
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"destroy"* || "${{ github.event.inputs.action }}" == "destroy" ]]; then
+            echo "DESTROY=true" >> $GITHUB_ENV
+          else
+            echo "DESTROY=false" >> $GITHUB_ENV
+          fi
 
-      # Step 7: Plan Terraform changes
+      # Step 8: Plan Terraform changes
       - name: Terraform Plan
         run: terraform plan
 
-
-      # Step 8: Apply Terraform changes (auto-approve)
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+      # Step 9: Apply or Destroy Terraform
+      - name: Terraform Apply/Destroy
+        run: |
+          if [[ "$DESTROY" == "true" ]]; then
+            terraform destroy -auto-approve
+          else
+            terraform apply -auto-approve
+          fi
