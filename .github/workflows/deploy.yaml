@@ -40,12 +40,29 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      # Step 7: Plan Terraform changes
+      # Step 7: Check if commit message or tag indicates destroy
+      - name: Check for destroy trigger
+        id: destroy_check
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"destroy"* ]] || [[ "${{ github.event.ref }}" == "refs/tags/destroy"* ]]; then
+            echo "Destroy flag found. Proceeding with terraform destroy."
+            echo "true" >> $GITHUB_ENV
+          else
+            echo "No destroy flag found. Proceeding with terraform plan."
+            echo "false" >> $GITHUB_ENV
+          fi
+
+      # Step 8: Run Terraform Destroy or Plan based on condition
+      - name: Terraform Destroy
+        if: env.destroy == 'true'
+        run: terraform destroy -auto-approve
+
+      # Step 9: Run Terraform Plan
       - name: Terraform Plan
+        if: env.destroy == 'false'
         run: terraform plan
 
-      # Step 8: Apply Terraform changes (auto-approve)
+      # Step 10: Apply Terraform changes (auto-approve)
       - name: Terraform Apply
+        if: env.destroy == 'false'
         run: terraform apply -auto-approve
-
-
