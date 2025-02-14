@@ -1,34 +1,49 @@
-name: Terraform Workflow
+name: Terraform Deploy to AWS
 
 on:
   push:
     branches:
-      - main  # Trigger on changes to the main branch
-  pull_request:
-    branches:
-      - main  # Trigger on PRs targeting the main branch
+      - main  # Trigger this pipeline only on pushes to the main branch
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest  # Use a GitHub-hosted runner
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Step 1: Check out the code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 'latest'  # Specify your desired version
+      # Step 2: Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: '1.4.0'  # Specify the Terraform version you are using
 
-    - name: Terraform Init
-      run: terraform init
+      # Step 3: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: us-east-1
 
-    - name: Terraform Plan
-      run: terraform plan
+      # Step 4: Debug AWS Credentials
+      - name: Debug AWS Credentials
+        run: aws sts get-caller-identity
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}   # Reference secret
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Reference secret
+      # Step 5: Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # Step 6: Validate Terraform configuration (optional but recommended)
+      - name: Terraform Validate
+        run: terraform validate
+
+      # Step 7: Plan Terraform changes
+      - name: Terraform Plan
+        run: terraform plan
+
+      # Step 8: Apply Terraform changes (auto-approve)
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
